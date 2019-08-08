@@ -1,0 +1,268 @@
+<html>
+    <head>
+        <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
+        <title>
+
+        </title>
+        <style>
+            .calendar-wrapper {
+                position: absolute;
+                z-index: 1;
+                font-family: arial;
+                width: 220px;
+                background: white;
+                margin-top: 4px;
+            }
+
+            .calendar-wrapper table {
+                min-width: 100%;
+                text-align: center;
+            }
+
+            .calendar-wrapper span {
+                margin: 0  5px 10px 10px;
+            }
+
+            .calendar-wrapper table caption {
+                position: relative;
+                min-width: 100%;
+                padding: 7px 0;
+                border-radius: 8px 8px 0 0;
+                color: white;
+                background: #f75020;
+            }
+
+            .calendar-wrapper table td {
+                padding: 5px;
+            }
+
+            .hours,
+            .minutes {
+                margin-bottom: 5px;
+                width: 40px;
+                border: none;
+                outline: none;
+            }
+
+            .ok {
+                border-radius: 0 0 8px 8px;
+                color: white;
+                background: #f75020;
+                min-width: 100%;
+                border: 0;
+                padding: 5px 0 5px 0;
+            }
+
+            .ok:focus, .calendar-wrapper input:focus {
+                outline: 0;
+            }
+
+            .previousMonth, .nextMonth,.calendar-wrapper table td, .ok {
+                cursor: pointer;
+            }
+            
+            .previousMonth {
+                position: absolute;
+                left: 0;
+            }
+
+            .nextMonth {
+                position: absolute;
+                right: 0;
+            }
+            
+            .nextMonth:hover,
+            .previousMonth:hover {
+                background-color: #de481d;
+            }
+
+            .selectedDay {
+                background: #f75020;
+                color: white;
+                border-radius: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <input class="calendar" style="margin-top: 300px; width: 250px;"/><br/>
+        <input class="calendar" style="margin-top: 300px; width: 250px;"/>
+        <div>
+            <input class="calendar" style="margin-top: 300px; width: 250px;"/>
+        </div>
+    </body>
+    <script type="text/javascript" defer>
+    const daysInWeek = 7;
+    const days = {
+        mon: 0,
+        sun: 6
+    };
+    const monthsNumber = {
+        jan: 0,
+        oct: 9,
+        nov: 10,
+        dec: 11
+
+    };
+    const today = new Date();
+    let clickOnCell = [];
+    let chosenDay1,chosenDay2;
+    let year = today.getFullYear();
+    let currentMonth = today.getMonth();
+    let hours = today.getHours();
+    let minutes = today.getMinutes();
+    hours = (hours < 10) ? '0' + hours : hours;
+    minutes = (minutes < 10) ? '0' + minutes : minutes;
+    let months = ['Январь', 'Февраль', 'Март', 'Апрель',
+                  'Май', 'Июнь', 'Июль', 'Август',
+                  'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+
+    $('.calendar').on('click',function () {
+        if($(this).prev().length == 0) {
+            $('<p class="aaaa"style="display:none;"></p>').insertBefore(this);
+        }
+        if($(this).prev() != undefined && $(this).prev()[0].className != "calendar-wrapper") {
+            $('<div class="calendar-wrapper"></div>').insertBefore(this);
+            createCalendar($(this).prev(),year,currentMonth)
+            //let coords = this.getBoundingClientRect();
+            //$($(this).prev()).css({'top': coords.top - 260 + "px" });
+        }
+    });    
+
+    function createCalendar(calendar,year, month) {
+        let date = new Date(year, month);
+        let table = getTable();
+        let hours = today.getHours();
+        let minutes = today.getMinutes();
+        for (let i = 0; i < getDay(date); i++) table += '<td></td>';
+
+        for (i = 0; date.getMonth() == month; i++) {
+            table += '<td onclick="chooseDay(this)">' + date.getDate() + '</td>';
+            if (getDay(date) % daysInWeek == days.sun) { // вс, последний день - перевод строки
+                table += '</tr><tr>';
+            }
+            date.setDate(date.getDate() + 1);
+        }
+        if (getDay(date) != days.mon) {
+            for (let i = getDay(date); i < daysInWeek; i++) {
+                table += createCell();
+            }
+        }
+        table += closeTable();
+        $(calendar).html(table);
+        $(calendar).append(fieldHours());
+        $(calendar).append(fieldMinutes() );
+        $(calendar).append(SaveTime());
+    }
+
+    function chooseDay(e) {
+        let currentMonthCopy = currentMonth;    
+        let yearCopy = year;
+        let currentDay = e.innerText;
+        let chooseHours = e.parentNode.parentNode.parentNode.parentNode.children[2].value;
+        let chooseMinutes = e.parentNode.parentNode.parentNode.parentNode.children[4].value;
+        currentDay = (currentDay < 10) ? '0' + currentDay : currentDay;
+        yearCopy = (yearCopy < 10) ? '0' + yearCopy : yearCopy;
+        currentMonthCopy = (currentMonthCopy < 9) ? '0' + currentMonthCopy : currentMonthCopy;
+        //let calendarTitleYear = e.parentNode.parentNode.parentNode.caption.children[1].innerText.split(' ')[1]; // год на календаре
+        if(!$(e).hasClass('selectedDay') && clickOnCell.length != 2){
+            $(e).addClass('selectedDay');
+            clickOnCell.push(`${currentDay}.${currentMonthCopy}.${yearCopy} ${chooseHours}:${chooseMinutes}`);
+            //console.log(clickOnCell);
+        } else if ($(e).hasClass('selectedDay')) {
+            $(e).removeClass('selectedDay');
+            for(let i = 0; i < clickOnCell.length; i++) {
+                if(clickOnCell[i] == `${currentDay}.${currentMonthCopy}.${yearCopy} ${chooseHours}:${chooseMinutes}`) {
+                    clickOnCell.splice(i,1);
+                }
+            }
+            console.log(clickOnCell);
+        }
+    }
+
+    function saveDate(e) {
+        let currentValueInput = $(e.parentNode).next();
+        let modifiedvalueInput = '';
+        for(let i =0; i < clickOnCell.length; i++) {
+            modifiedvalueInput += clickOnCell[i] + ' ';
+        }
+        $(currentValueInput).val(modifiedvalueInput);
+        $(e.parentNode).remove();
+        clickOnCell = [];
+    }
+
+    function nextMonth(e) {
+        let table = e.parentNode.parentNode;
+        let calendarWrapper = table.parentNode;
+        $(calendarWrapper).empty();
+
+        if (currentMonth >= 0 && currentMonth <= 11) {
+            currentMonth++;
+            if (currentMonth != 12) {
+                
+                createCalendar(calendarWrapper, year, currentMonth);
+            }
+        }
+        if (currentMonth == -1 || currentMonth == 0) {
+            currentMonth = 11;
+            createCalendar(calendarWrapper, year, currentMonth);
+        }
+        if (currentMonth == 12) {
+            currentMonth = 0;
+            year++;
+            createCalendar(calendarWrapper, year, currentMonth);
+        }
+    }
+
+    function previousMonth(e) {
+        
+        let table = e.parentNode.parentNode;
+        let calendarWrapper = table.parentNode;
+        $(calendarWrapper).empty();
+        if (currentMonth >= 0 && currentMonth <= 11) {
+            currentMonth--;
+            if (currentMonth != -1) {
+                createCalendar(calendarWrapper, year, currentMonth);
+            }
+        }
+        if (currentMonth < 0) {
+            currentMonth = 11;
+            year--
+            createCalendar(calendarWrapper, year, currentMonth);
+        }
+    }
+
+    function getTable() {
+        return '<table>' +
+                    '<caption>' +
+                        '<span class="previousMonth" onclick=previousMonth(this)> < </span>' +
+                        '<span class="calendar-wrapper-date">' + months[currentMonth] + ' ' + year + '</span>' +
+                        '<span class="nextMonth" onclick=nextMonth(this)> > </span>' +
+                    '</caption>' +
+                        '<tr >' +
+                        '<th>пн</th>' +
+                        '<th>вт</th>' +
+                        '<th>ср</th>' +
+                        '<th>чт</th>' +
+                        '<th>пт</th>' +
+                        '<th>сб</th>' +
+                        '<th>вс</th>' +
+                        '</tr>' +
+                        '<tr>';
+    }
+
+    function getDay(date) {
+        let day = date.getDay();
+        if (day == days.mon) day = daysInWeek;
+        return day - 1;
+    }
+
+    let closeTable = () => '</tr></table>';
+
+    let createCell = () => '<td></td>';
+
+    let fieldHours = () =>  `<span>Час</span><input type = "number" class = "time hours" placeholder = "Час" value = ${hours} />`;
+    let fieldMinutes = () =>  `<span>Мин</span><input type = "number" class = "time minutes" placeholder = "Мин" value = ${minutes} />`;
+    let SaveTime = () => '<button class="ok" onclick=saveDate(this)>OK</button>';
+</script>
+
+</html>
